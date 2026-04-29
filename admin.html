@@ -2,39 +2,46 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>إدارة النماذج والنتائج - أ/ عبدالعزيز الفيفي</title>
+    <title>لوحة تحكم المعلم - أ/ عبدالعزيز الفيفي</title>
     <style>
-        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        input { padding: 10px; margin: 5px; width: 300px; border: 1px solid #ddd; }
-        button { padding: 10px 20px; background: #673ab7; color: white; border: none; cursor: pointer; border-radius: 5px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
-        th { background: #673ab7; color: white; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #212121; text-align: center; margin-bottom: 30px; border-bottom: 2px solid #b19410; padding-bottom: 10px; }
+        .btn-refresh { background: #673ab7; color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; width: 100%; }
+        .btn-refresh:hover { background: #5e35b1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 25px; }
+        th { background: #212121; color: #ffc107; padding: 15px; text-align: center; }
+        td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+        tr:hover { background-color: #f9f9f9; }
+        .loading { text-align: center; padding: 20px; color: #666; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h3>إضافة نموذج اختبار جديد</h3>
-    <input type="text" id="qName" placeholder="اسم النموذج (مثل: نموذج 6)">
-    <input type="text" id="qLink" placeholder="رابط الاختبار (GitHub URL)">
-    <button onclick="addQuiz()">حفظ النموذج</button>
-</div>
-
-<div class="card">
-    <h1>نتائج الطلاب</h1>
-    <button onclick="fetchResults()">تحديث النتائج</button>
+<div class="container">
+    <h1>📊 لوحة متابعة نتائج الطلاب</h1>
+    <button class="btn-refresh" onclick="fetchResults()">تحديث البيانات الآن</button>
+    
     <table>
-        <thead><tr><th>الطالب</th><th>الدرجة</th><th>الاختبار</th><th>التاريخ</th></tr></thead>
-        <tbody id="resultsBody"></tbody>
+        <thead>
+            <tr>
+                <th>اسم الطالب</th>
+                <th>الدرجة</th>
+                <th>اسم الاختبار</th>
+                <th>تاريخ الاختبار</th>
+            </tr>
+        </thead>
+        <tbody id="resultsBody">
+            </tbody>
     </table>
+    <div id="statusMsg" class="loading"></div>
 </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // نفس بيانات الربط الموجودة في index.html
     const firebaseConfig = {
         apiKey: "AIzaSyBkCO7FDQXd09YDf843J4_AtvEFvzzt-R0",
         authDomain: "aztlg-494c3.firebaseapp.com",
@@ -48,29 +55,39 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // دالة إضافة النموذج
-    window.addQuiz = async () => {
-        const name = document.getElementById('qName').value;
-        const link = document.getElementById('qLink').value;
-        if(!name || !link) return alert("الرجاء تعبئة الاسم والرابط");
-        
-        await addDoc(collection(db, "quizzes"), { name, link });
-        alert("تم حفظ النموذج بنجاح!");
-        document.getElementById('qName').value = "";
-        document.getElementById('qLink').value = "";
-    };
-
-    // دالة جلب النتائج
     window.fetchResults = async () => {
         const body = document.getElementById('resultsBody');
-        const snapshot = await getDocs(collection(db, "student_results"));
+        const msg = document.getElementById('statusMsg');
         body.innerHTML = "";
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            body.innerHTML += `<tr><td>${d.name}</td><td>${d.score}</td><td>${d.quizId}</td><td>${d.date}</td></tr>`;
-        });
+        msg.innerText = "جاري جلب البيانات من السحابة...";
+
+        try {
+            // جلب البيانات مرتبة حسب التاريخ (الأحدث أولاً)
+            const q = query(collection(db, "student_results"), orderBy("date", "desc"));
+            const snapshot = await getDocs(q);
+            
+            msg.innerText = "";
+            if (snapshot.empty) {
+                msg.innerText = "لا توجد نتائج حالياً.";
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                body.innerHTML += `<tr>
+                    <td>${d.name}</td>
+                    <td><strong style="color:#1b5e20;">${d.score}</strong></td>
+                    <td>${d.quizId}</td>
+                    <td style="font-size:0.85rem; color:#666;">${d.date}</td>
+                </tr>`;
+            });
+        } catch (e) {
+            msg.innerText = "حدث خطأ: تأكد من اتصالك بالإنترنت.";
+            console.error(e);
+        }
     };
-    
+
+    // جلب البيانات تلقائياً عند فتح الصفحة
     fetchResults();
 </script>
 
