@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إدارة النماذج والنتائج - أ/ عبدالعزيز الفيفي</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        input { padding: 10px; margin: 5px; width: 300px; border: 1px solid #ddd; }
+        button { padding: 10px 20px; background: #673ab7; color: white; border: none; cursor: pointer; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: center; }
+        th { background: #673ab7; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h3>إضافة نموذج اختبار جديد</h3>
+    <input type="text" id="qName" placeholder="اسم النموذج (مثل: نموذج 6)">
+    <input type="text" id="qLink" placeholder="رابط الاختبار (GitHub URL)">
+    <button onclick="addQuiz()">حفظ النموذج</button>
+</div>
+
+<div class="card">
+    <h1>نتائج الطلاب</h1>
+    <button onclick="fetchResults()">تحديث النتائج</button>
+    <table>
+        <thead><tr><th>الطالب</th><th>الدرجة</th><th>الاختبار</th><th>التاريخ</th></tr></thead>
+        <tbody id="resultsBody"></tbody>
+    </table>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBkCO7FDQXd09YDf843J4_AtvEFvzzt-R0",
+        authDomain: "aztlg-494c3.firebaseapp.com",
+        projectId: "aztlg-494c3",
+        storageBucket: "aztlg-494c3.firebasestorage.app",
+        messagingSenderId: "597051893949",
+        appId: "1:597051893949:web:de5554ac900317a92b2fd4",
+        measurementId: "G-YKJ1PTP9TH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // دالة إضافة النموذج
+    window.addQuiz = async () => {
+        const name = document.getElementById('qName').value;
+        const link = document.getElementById('qLink').value;
+        if(!name || !link) return alert("الرجاء تعبئة الاسم والرابط");
+        
+        await addDoc(collection(db, "quizzes"), { name, link });
+        alert("تم حفظ النموذج بنجاح!");
+        document.getElementById('qName').value = "";
+        document.getElementById('qLink').value = "";
+    };
+
+    // دالة جلب النتائج
+    window.fetchResults = async () => {
+        const body = document.getElementById('resultsBody');
+        const snapshot = await getDocs(collection(db, "student_results"));
+        body.innerHTML = "";
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            body.innerHTML += `<tr><td>${d.name}</td><td>${d.score}</td><td>${d.quizId}</td><td>${d.date}</td></tr>`;
+        });
+    };
+    
+    fetchResults();
+</script>
+
+</body>
+</html>
