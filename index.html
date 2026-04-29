@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>منصة اختبارات - عبدالعزيز الفيفي - ثانوية الأمير عبدالمجيد 👨‍🏫</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>منصة اختبارات Verbal GAT</h1>
+        <div id="setup-area">
+            <input type="text" id="student-name" placeholder="أدخل اسمك الكريم">
+            <button onclick="startQuiz()">ابدأ الاختبار</button>
+        </div>
+        <div id="quiz-area" class="hidden">
+            <div id="timer">الوقت المتبقي: 30</div>
+            <div id="question-text"></div>
+            <div id="options-container" class="options-vertical"></div>
+        </div>
+        <div id="result-area" class="hidden">
+            <h2>النتيجة النهائية</h2>
+            <div id="score-display"></div>
+            <button onclick="location.reload()">اختبار جديد</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
